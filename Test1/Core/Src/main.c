@@ -21,7 +21,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "stdio.h"
+#include "string.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -56,6 +57,7 @@ static void MX_USART1_UART_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 char str_tmp[100] = "";
+unsigned char rx[100];
 /* USER CODE END 0 */
 
 /**
@@ -94,19 +96,26 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   snprintf(str_tmp,100,"T_out = ");
+  size_t len;
   while (1)
   {
     /* USER CODE END WHILE */
 
-	  HAL_UART_Transmit(&huart1,str_tmp,sizeof(str_tmp),1000);
-	  HAL_Delay(1000);
+	  HAL_UART_Receive(&huart1,str_tmp,sizeof(str_tmp),5000);
+	  len=strlen(str_tmp);
+
+	  if(str_tmp[len-1]=='\n')
+	  {
+		HAL_UART_Transmit(&huart1,"RX=",sizeof(50),1000);
+	    HAL_UART_Transmit(&huart1,str_tmp,sizeof(str_tmp),1000);
+	  }
+
 	  memset(str_tmp,0,strlen(str_tmp));
-	  HAL_UART_Receive(&huart1,str_tmp,sizeof(str_tmp),4000);
-	  HAL_Delay(1000);
-      HAL_UART_Transmit(&huart1,"RX=",sizeof(50),1000);
-	  HAL_Delay(1000);
 
     /* USER CODE BEGIN 3 */
+
+
+
   }
   /* USER CODE END 3 */
 }
