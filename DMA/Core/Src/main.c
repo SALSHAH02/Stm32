@@ -40,11 +40,13 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
- UART_HandleTypeDef huart1;
+ UART_HandleTypeDef huart4;
+UART_HandleTypeDef huart1;
+DMA_HandleTypeDef hdma_uart4_rx;
 DMA_HandleTypeDef hdma_usart1_rx;
 
 /* USER CODE BEGIN PV */
-uint8_t i=0;
+uint8_t i,j=0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -52,14 +54,15 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_USART1_UART_Init(void);
+static void MX_UART4_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-#define RxBuf_SIZE 20
-#define MainBuf_SIZE 20
+#define RxBuf_SIZE   20
+#define MainBuf_SIZE 30
 
 uint8_t RxBuf[RxBuf_SIZE];
 uint8_t MainBuf[MainBuf_SIZE];
@@ -69,6 +72,7 @@ uint16_t newPos = 0;
 
 int isOk = 0;
 uint8_t data;
+uint8_t data1;
 
 
 
@@ -77,51 +81,39 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
 
   if(huart->Instance == USART1)
   {
-
-//	  oldPos = newPos;
-//
-//	  if(oldPos+Size > MainBuf_SIZE)
-//	  {
-//		  uint16_t datatocopy = MainBuf_SIZE-oldPos;
-//		  memcpy ((uint8_t *)MainBuf, RxBuf, datatocopy);
-//
-//		  oldPos = 0;
-//		  memcpy ((uint8_t *)MainBuf, (uint8_t *)RxBuf+datatocopy, (Size-datatocopy));
-//		  newPos = (Size-datatocopy);
-//
-//	  }
-//
-//	  else
-//	  {
-//		  memcpy ((uint8_t *)MainBuf+oldPos, RxBuf, Size);
-//		  newPos = Size+oldPos;
-//	  }
-//	  memcpy (MainBuf, RxBuf, Size);
 	  HAL_UARTEx_ReceiveToIdle_DMA(&huart1, &data, 1);
 	  RxBuf[i] = data;
 	  i++;
 
-
 	  __HAL_DMA_DISABLE_IT(&hdma_usart1_rx, DMA_IT_HT);
 
-  }
-
-
-//for(int i =0; i<Size; i++)
-//{
-//  if((RxBuf[i] == 'O') && (RxBuf[i+1] == 'K'))
-//  {
-//	  isOk = 1;
-//  }
-//}
-
-	if(data=='\r')
-	{
-	HAL_UART_Transmit(&huart1, RxBuf, sizeof(RxBuf), 500);
-	i=0;
-	memset(RxBuf,0 , sizeof(RxBuf) );
-	}
 }
+  if(data=='\r')
+  	{
+  	HAL_UART_Transmit(&huart4, RxBuf, sizeof(RxBuf), 500);
+  	i=0;
+  	memset(RxBuf,0 , sizeof(RxBuf) );
+  	}
+
+  if(huart->Instance == UART4)
+    {
+  	  HAL_UARTEx_ReceiveToIdle_DMA(&huart4, &data1, 1);
+  	  MainBuf[j] = data1;
+  	  j++;
+
+  	  __HAL_DMA_DISABLE_IT(&hdma_uart4_rx, DMA_IT_HT);
+
+  }
+    if(data1=='\r')
+    	{
+    	HAL_UART_Transmit(&huart1, MainBuf, sizeof(MainBuf), 500);
+    	j=0;
+    	memset(MainBuf,0 , sizeof(MainBuf) );
+    	}
+
+}
+
+
 
 /* USER CODE END 0 */
 
@@ -155,11 +147,13 @@ int main(void)
   MX_GPIO_Init();
   MX_DMA_Init();
   MX_USART1_UART_Init();
+  MX_UART4_Init();
   /* USER CODE BEGIN 2 */
 
-HAL_UARTEx_ReceiveToIdle_DMA(&huart1, RxBuf, RxBuf_SIZE);
-__HAL_DMA_DISABLE_IT(&hdma_usart1_rx, DMA_IT_HT);
-HAL_UARTEx_RxEventCallback(&huart1,RxBuf);
+	//HAL_UARTEx_ReceiveToIdle_DMA(&huart1, RxBuf, RxBuf_SIZE);
+	//__HAL_DMA_DISABLE_IT(&hdma_usart1_rx, DMA_IT_HT);
+	HAL_UARTEx_RxEventCallback(&huart1,RxBuf);
+	HAL_UARTEx_RxEventCallback(&huart4,MainBuf);
 
   /* USER CODE END 2 */
 
@@ -229,6 +223,41 @@ void SystemClock_Config(void)
 }
 
 /**
+  * @brief UART4 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_UART4_Init(void)
+{
+
+  /* USER CODE BEGIN UART4_Init 0 */
+
+  /* USER CODE END UART4_Init 0 */
+
+  /* USER CODE BEGIN UART4_Init 1 */
+
+  /* USER CODE END UART4_Init 1 */
+  huart4.Instance = UART4;
+  huart4.Init.BaudRate = 115200;
+  huart4.Init.WordLength = UART_WORDLENGTH_8B;
+  huart4.Init.StopBits = UART_STOPBITS_1;
+  huart4.Init.Parity = UART_PARITY_NONE;
+  huart4.Init.Mode = UART_MODE_TX_RX;
+  huart4.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart4.Init.OverSampling = UART_OVERSAMPLING_16;
+  huart4.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+  huart4.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+  if (HAL_UART_Init(&huart4) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN UART4_Init 2 */
+
+  /* USER CODE END UART4_Init 2 */
+
+}
+
+/**
   * @brief USART1 Initialization Function
   * @param None
   * @retval None
@@ -271,11 +300,15 @@ static void MX_DMA_Init(void)
 
   /* DMA controller clock enable */
   __HAL_RCC_DMA1_CLK_ENABLE();
+  __HAL_RCC_DMA2_CLK_ENABLE();
 
   /* DMA interrupt init */
   /* DMA1_Channel5_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Channel5_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA1_Channel5_IRQn);
+  /* DMA2_Channel5_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Channel5_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Channel5_IRQn);
 
 }
 
@@ -346,14 +379,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG_ADC_CONTROL;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : ARD_D1_Pin ARD_D0_Pin */
-  GPIO_InitStruct.Pin = ARD_D1_Pin|ARD_D0_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-  GPIO_InitStruct.Alternate = GPIO_AF8_UART4;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pins : ARD_D10_Pin SPBTLE_RF_RST_Pin ARD_D9_Pin */
   GPIO_InitStruct.Pin = ARD_D10_Pin|SPBTLE_RF_RST_Pin|ARD_D9_Pin;
