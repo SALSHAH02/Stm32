@@ -67,50 +67,43 @@ static void MX_UART4_Init(void);
 uint8_t RxBuf[RxBuf_SIZE];
 uint8_t MainBuf[MainBuf_SIZE];
 
-uint16_t oldPos = 0;
-uint16_t newPos = 0;
-
-int isOk = 0;
-uint8_t data;
-uint8_t data1;
+uint8_t data = 0;
+uint8_t data1 = 0;
 
 
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
 {
 
-  if(huart->Instance == USART1)
-  {
-	  HAL_UARTEx_ReceiveToIdle_DMA(&huart1, &data, 1);
-	  RxBuf[i] = data;
-	  i++;
+	if(huart->Instance == USART1)
+	{
+		HAL_UARTEx_ReceiveToIdle_DMA(&huart1, &data, 1);
+		RxBuf[i] = data;
+		i++;
 
-	  __HAL_DMA_DISABLE_IT(&hdma_usart1_rx, DMA_IT_HT);
+		__HAL_DMA_DISABLE_IT(&hdma_usart1_rx, DMA_IT_HT);
+		if(data=='\r')
+		{
+			HAL_UART_Transmit(&huart4, RxBuf, sizeof(RxBuf), 500);
+			i=0;
+			memset(RxBuf,0 , sizeof(RxBuf) );
+		}
+	}
 
-}
-  if(data=='\r')
-  	{
-  	HAL_UART_Transmit(&huart4, RxBuf, sizeof(RxBuf), 500);
-  	i=0;
-  	memset(RxBuf,0 , sizeof(RxBuf) );
-  	}
+	if(huart->Instance == UART4)
+	{
+		HAL_UARTEx_ReceiveToIdle_DMA(&huart4, &data1, 1);
+		MainBuf[j] = data1;
+		j++;
 
-  if(huart->Instance == UART4)
-    {
-  	  HAL_UARTEx_ReceiveToIdle_DMA(&huart4, &data1, 1);
-  	  MainBuf[j] = data1;
-  	  j++;
-
-  	  __HAL_DMA_DISABLE_IT(&hdma_uart4_rx, DMA_IT_HT);
-
-  }
-    if(data1=='\r')
-    	{
-    	HAL_UART_Transmit(&huart1, MainBuf, sizeof(MainBuf), 500);
-    	j=0;
-    	memset(MainBuf,0 , sizeof(MainBuf) );
-    	}
-
+		__HAL_DMA_DISABLE_IT(&hdma_uart4_rx, DMA_IT_HT);
+		if(data1=='\r')
+		{
+			HAL_UART_Transmit(&huart1, MainBuf, sizeof(MainBuf), 500);
+			j=0;
+			memset(MainBuf,0 , sizeof(MainBuf) );
+		}
+	}
 }
 
 
