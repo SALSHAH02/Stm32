@@ -197,31 +197,34 @@ int wifi_connect(void) {
 	// sorting values
 
 	LOG(("\nSorting\n"));
-	for (int i=0; i<A.count; i++){
+	for (int i=0; i<A.count; i++)
+	{
 	      sm=i;
-	      for (j=i+1; j<A.count; j++){
-	         if (A.ap[j].RSSI < A.ap[sm].RSSI){
-	            sm=j;
+	      for (j=i+1; j<A.count; j++)
+          {
+	         if (A.ap[j].RSSI > A.ap[sm].RSSI)
+	         {
+	          sm=j;
 	         }
 	      }
 
 	      t=A.ap[i].RSSI;
 	      A.ap[i].RSSI=A.ap[sm].RSSI;
 	      A.ap[sm].RSSI=t;
+
 	      strcpy(t1,A.ap[i].SSID);
 	      strcpy(A.ap[i].SSID,A.ap[sm].SSID);
 	      strcpy(A.ap[sm].SSID,t1);
-	   }
+	  }
 	uint8_t tmp[100];
-	LOG(("\nAFter sorting\n"));
+	LOG(("\n*********AFter sorting************\n"));
 	volatile uint16_t  count=0;
-	for (int i = A.count - 1; i >= 0; i--)
-	{
-		 LOG(("%d SSID's : %s\t", count, A.ap[i].SSID));
-		 LOG(("->%d RSSI VALUE : %d\n", count, A.ap[i].RSSI));
+	for (int i =0; i < A.count; i++)
+		{
+		  LOG(("%d SSID's : %s\t", i, A.ap[i].SSID));
+		  LOG(("->%d RSSI VALUE : %d\n", i, A.ap[i].RSSI));
+		}
 
-		count++;
-	}
 
 
 	memset(&user_config, 0, sizeof(user_config));
@@ -239,8 +242,8 @@ int wifi_connect(void) {
 		}
 	}
 
-	if (user_config.wifi_config_magic != USER_CONF_MAGIC) {
-
+	if (user_config.wifi_config_magic != USER_CONF_MAGIC)
+	{
 		LOG(("SELECT THE SSID \n"));
 		gets(ssid_num);
 		LOG(("SSID====%s",ssid_num));
