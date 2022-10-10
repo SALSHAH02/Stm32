@@ -143,7 +143,7 @@ int main(void) {
 	BSP_COM_Init(COM1, &hDiscoUart);
 	BSP_TSENSOR_Init();
 
-	printf("\n****** WIFI Web Server demonstration ******\n\n");
+	printf("\n****** List of the available WIFI networks******\n\n");
 
 #endif /* TERMINAL_USE */
 
@@ -162,12 +162,12 @@ static int wifi_start(void) {
 
 	/*Initialize and use WIFI module */
 	if (WIFI_Init() == WIFI_STATUS_OK) {
-		printf("eS-WiFi Initialized.\n");
+		//printf("eS-WiFi Initialized.\n");
 		if (WIFI_GetMAC_Address(MAC_Addr) == WIFI_STATUS_OK) {
-			LOG(
-					("eS-WiFi module MAC Address : %02X:%02X:%02X:%02X:%02X:%02X\n", MAC_Addr[0], MAC_Addr[1], MAC_Addr[2], MAC_Addr[3], MAC_Addr[4], MAC_Addr[5]));
+			//LOG(
+					//("eS-WiFi module MAC Address : %02X:%02X:%02X:%02X:%02X:%02X\n", MAC_Addr[0], MAC_Addr[1], MAC_Addr[2], MAC_Addr[3], MAC_Addr[4], MAC_Addr[5]));
 		} else {
-			LOG(("> ERROR : CANNOT get MAC address\n"));
+			//LOG(("> ERROR : CANNOT get MAC address\n"));
 			return -1;
 		}
 	} else {
@@ -183,9 +183,40 @@ int wifi_connect(void) {
 	int max = 0;
 	unsigned char ssid_num[2];
 	max = WIFI_ListAccessPoints(&A, 20);
-	for (int i = 0; i < A.count; i++) {
-		LOG(("%d AVAILABLE WIFI NETWORKS =%s\n", i, A.ap[i].SSID));
+	LOG(("\n"));
+	for (int k = 0; k < A.count; k++)
+	{
+
+	LOG(("%d : %s 	: %d\n", k, A.ap[k].SSID,A.ap[k].RSSI));
+
 	}
+
+	int sm=0,j=0,t=0;
+	// sorting values
+
+	LOG(("\nSorting\n"));
+	for (int i=0; i<A.count; i++){
+	      sm=i;
+	      for (j=i+1; j<A.count; j++){
+	         if (A.ap[j].RSSI < A.ap[sm].RSSI){
+	            sm=j;
+	         }
+	      }
+
+	      t=A.ap[i].RSSI;
+	      A.ap[i].RSSI=A.ap[sm].RSSI;
+	      A.ap[sm].RSSI=t;
+	   }
+	uint8_t tmp[100];
+	LOG(("\nAFter sorting\n"));
+	volatile uint16_t  count=0;
+	for (int i = A.count - 1; i >= 0; i--)
+	{
+		LOG(("%d RSSI VALUE : %d\n", count, A.ap[i].RSSI));
+      //LOG(("%d SSID's : %s\n", count, A.ap[i].SSID));
+		count++;
+	}
+
 
 	memset(&user_config, 0, sizeof(user_config));
 	memcpy(&user_config, lUserConfigPtr, sizeof(user_config));
@@ -207,7 +238,8 @@ int wifi_connect(void) {
 		LOG(("SELECT THE SSID \n"));
 		gets(ssid_num);
 		LOG(("SSID====%s",ssid_num));
-		switch (ssid_num[0]) {
+		switch (ssid_num[0])
+		{
 
 		case 48:
 			LOG(("selected_WIFI=%s\n",A.ap[0].SSID));
@@ -226,6 +258,7 @@ int wifi_connect(void) {
 			sprintf(user_config.wifi_config.ssid, "%s", A.ap[2].SSID);
 			LOG(("\nYou have entered %s as SSID.\n", user_config.wifi_config.ssid));
 			break;
+
 		case 51:
 			LOG(("selected_WIFI=%s\n",A.ap[3].SSID));
 			sprintf(user_config.wifi_config.ssid, "%s", A.ap[3].SSID);
@@ -272,6 +305,16 @@ int wifi_connect(void) {
 			LOG(("selected_WIFI=%s\n",A.ap[10].SSID));
 			sprintf(user_config.wifi_config.ssid, "%s", A.ap[10].SSID);
 			LOG(("\nYou have entered %s as SSID.\n", user_config.wifi_config.ssid));
+			break;
+
+		case 59:
+			LOG(("selected_WIFI=%s\n",A.ap[11].SSID));
+			sprintf(user_config.wifi_config.ssid, "%s", A.ap[11].SSID);
+			LOG(("\nYou have entered %s as SSID.\n", user_config.wifi_config.ssid));
+			break;
+
+		default:
+			LOG(("\nInvalid Choice\n"));
 			break;
 
 		}
@@ -345,7 +388,7 @@ int wifi_connect(void) {
 int wifi_server(void) {
 	bool StopServer = false;
 
-	LOG(("\nRunning HTML Server test\n"));
+	//LOG(("\nRunning HTML Server test\n"));
 	if (wifi_connect() != 0)
 		return -1;
 
