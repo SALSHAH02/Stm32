@@ -186,12 +186,14 @@ int wifi_connect(void) {
 	LOG(("\n"));
 	for (int k = 0; k < A.count; k++)
 	{
-
-	LOG(("%d : %s 	: %d\n", k, A.ap[k].SSID,A.ap[k].RSSI));
+	LOG(("%d SSID's : %s\t", k, A.ap[k].SSID));
+	LOG(("-> %d RSSI VALUE : %d\n", k, A.ap[k].RSSI));
+//	LOG(("%d : %s : %d\n", k, A.ap[k].SSID,A.ap[k].RSSI));
 
 	}
 
 	int sm=0,j=0,t=0;
+	char  t1[100];
 	// sorting values
 
 	LOG(("\nSorting\n"));
@@ -206,14 +208,18 @@ int wifi_connect(void) {
 	      t=A.ap[i].RSSI;
 	      A.ap[i].RSSI=A.ap[sm].RSSI;
 	      A.ap[sm].RSSI=t;
+	      strcpy(t1,A.ap[i].SSID);
+	      strcpy(A.ap[i].SSID,A.ap[sm].SSID);
+	      strcpy(A.ap[sm].SSID,t1);
 	   }
 	uint8_t tmp[100];
 	LOG(("\nAFter sorting\n"));
 	volatile uint16_t  count=0;
 	for (int i = A.count - 1; i >= 0; i--)
 	{
-		LOG(("%d RSSI VALUE : %d\n", count, A.ap[i].RSSI));
-      //LOG(("%d SSID's : %s\n", count, A.ap[i].SSID));
+		 LOG(("%d SSID's : %s\t", count, A.ap[i].SSID));
+		 LOG(("->%d RSSI VALUE : %d\n", count, A.ap[i].RSSI));
+
 		count++;
 	}
 
