@@ -179,6 +179,7 @@ static int wifi_start(void) {
 int wifi_connect(void) {
 	wifi_start();
 	WIFI_APs_t A;
+	int rk=0;
 
 	int max = 0;
 	unsigned char ssid_num[2];
@@ -186,8 +187,8 @@ int wifi_connect(void) {
 	LOG(("\n"));
 	for (int k = 0; k < A.count; k++)
 	{
-	LOG(("%d SSID's : %s\t", k, A.ap[k].SSID));
-	LOG(("-> %d RSSI VALUE : %d\n", k, A.ap[k].RSSI));
+//	LOG(("%d SSID's : %s\t", k, A.ap[k].SSID));
+//	LOG(("-> %d RSSI VALUE : %d\n", k, A.ap[k].RSSI));
 //	LOG(("%d : %s : %d\n", k, A.ap[k].SSID,A.ap[k].RSSI));
 
 	}
@@ -196,7 +197,7 @@ int wifi_connect(void) {
 	char  t1[100];
 	// sorting values
 
-	LOG(("\nSorting\n"));
+	//LOG(("\nSorting\n"));
 	for (int i=0; i<A.count; i++)
 	{
 	      sm=i;
@@ -217,8 +218,8 @@ int wifi_connect(void) {
 	      strcpy(A.ap[sm].SSID,t1);
 	  }
 	uint8_t tmp[100];
-	LOG(("\n*********AFter sorting************\n"));
-	volatile uint16_t  count=0;
+//	LOG(("\n*********AFter sorting************\n"));
+//volatile uint16_t  count=0;
 	for (int i =0; i < A.count; i++)
 		{
 		  LOG(("%d SSID's : %s\t", i, A.ap[i].SSID));
@@ -241,11 +242,14 @@ int wifi_connect(void) {
 			memset(&user_config, 0, sizeof(user_config));
 		}
 	}
-
-	if (user_config.wifi_config_magic != USER_CONF_MAGIC)
+while(1){
+	int num=10;
+	if (num==10)
 	{
+
 		LOG(("SELECT THE SSID \n"));
 		gets(ssid_num);
+
 		LOG(("SSID====%s",ssid_num));
 		switch (ssid_num[0])
 		{
@@ -254,72 +258,84 @@ int wifi_connect(void) {
 			LOG(("selected_WIFI=%s\n",A.ap[0].SSID));
 			sprintf(user_config.wifi_config.ssid, "%s", A.ap[0].SSID);
 			LOG(("\nYou have entered %s as SSID.\n", user_config.wifi_config.ssid));
+			strcpy(A.ap[0].SSID,"****");
 			break;
 
 		case 49:
 			LOG(("selected_WIFI=%s\n",A.ap[1].SSID));
 			sprintf(user_config.wifi_config.ssid, "%s", A.ap[1].SSID);
 			LOG(("\nYou have entered %s as SSID.\n", user_config.wifi_config.ssid));
+			strcpy(A.ap[1].SSID,"****");
 			break;
 
 		case 50:
 			LOG(("selected_WIFI=%s\n",A.ap[2].SSID));
 			sprintf(user_config.wifi_config.ssid, "%s", A.ap[2].SSID);
 			LOG(("\nYou have entered %s as SSID.\n", user_config.wifi_config.ssid));
+			strcpy(A.ap[2].SSID,"****");
 			break;
 
 		case 51:
 			LOG(("selected_WIFI=%s\n",A.ap[3].SSID));
 			sprintf(user_config.wifi_config.ssid, "%s", A.ap[3].SSID);
 			LOG(("\nYou have entered %s as SSID.\n", user_config.wifi_config.ssid));
+			strcpy(A.ap[3].SSID,"****");
 			break;
 
 		case 52:
 			LOG(("selected_WIFI=%s\n",A.ap[4].SSID));
 			sprintf(user_config.wifi_config.ssid, "%s", A.ap[4].SSID);
 			LOG(("\nYou have entered %s as SSID.\n", user_config.wifi_config.ssid));
+			strcpy(A.ap[4].SSID,"****");
 			break;
 
 		case 53:
 			LOG(("selected_WIFI=%s\n",A.ap[5].SSID));
 			sprintf(user_config.wifi_config.ssid, "%s", A.ap[5].SSID);
 			LOG(("\nYou have entered %s as SSID.\n", user_config.wifi_config.ssid));
+			strcpy(A.ap[5].SSID,"****");
 			break;
 
 		case 54:
 			LOG(("selected_WIFI=%s\n",A.ap[6].SSID));
 			sprintf(user_config.wifi_config.ssid, "%s", A.ap[6].SSID);
 			LOG(("\nYou have entered %s as SSID.\n", user_config.wifi_config.ssid));
+			strcpy(A.ap[6].SSID,"****");
 			break;
 
 		case 55:
 			LOG(("selected_WIFI=%s\n",A.ap[7].SSID));
 			sprintf(user_config.wifi_config.ssid, "%s", A.ap[7].SSID);
 			LOG(("\nYou have entered %s as SSID.\n", user_config.wifi_config.ssid));
+			strcpy(A.ap[7].SSID,"****");
 			break;
 
 		case 56:
 			LOG(("selected_WIFI=%s\n",A.ap[8].SSID));
 			sprintf(user_config.wifi_config.ssid, "%s", A.ap[8].SSID);
 			LOG(("\nYou have entered %s as SSID.\n", user_config.wifi_config.ssid));
+			strcpy(A.ap[8].SSID,"****");
 			break;
 
 		case 57:
 			LOG(("selected_WIFI=%s\n",A.ap[9].SSID));
 			sprintf(user_config.wifi_config.ssid, "%s", A.ap[9].SSID);
 			LOG(("\nYou have entered %s as SSID.\n", user_config.wifi_config.ssid));
+			strcpy(A.ap[9].SSID,"****");
 			break;
 
 		case 58:
 			LOG(("selected_WIFI=%s\n",A.ap[10].SSID));
 			sprintf(user_config.wifi_config.ssid, "%s", A.ap[10].SSID);
 			LOG(("\nYou have entered %s as SSID.\n", user_config.wifi_config.ssid));
+			strcpy(A.ap[10].SSID,"****");
 			break;
 
 		case 59:
 			LOG(("selected_WIFI=%s\n",A.ap[11].SSID));
 			sprintf(user_config.wifi_config.ssid, "%s", A.ap[11].SSID);
 			LOG(("\nYou have entered %s as SSID.\n", user_config.wifi_config.ssid));
+			strcpy(A.ap[11].SSID,"****");
 			break;
 
 		default:
@@ -327,6 +343,7 @@ int wifi_connect(void) {
 			break;
 
 		}
+
 //
 //         if(ssid_num[0]==48)
 //            {
@@ -382,8 +399,17 @@ int wifi_connect(void) {
 			user_config.wifi_config.password, security) == WIFI_STATUS_OK) {
 		if (WIFI_GetIP_Address(IP_Addr) == WIFI_STATUS_OK) {
 			LOG(
-					("eS-WiFi module connected: got IP Address : %d.%d.%d.%d\n", IP_Addr[0], IP_Addr[1], IP_Addr[2], IP_Addr[3]));
-		} else {
+					("eS-WiFi module connected:\ngot IP Address : %d.%d.%d.%d\n", IP_Addr[0], IP_Addr[1], IP_Addr[2], IP_Addr[3]));
+
+		for (int i =0; i < A.count; i++)
+					{
+					  LOG(("%d SSID's : %s\t", i, A.ap[i].SSID));
+					  LOG(("->%d RSSI VALUE : %d\n", i, A.ap[i].RSSI));
+					}
+
+
+		}
+		else {
 			LOG((" ERROR : es-wifi module CANNOT get IP address\n"));
 			return -1;
 		}
@@ -391,7 +417,10 @@ int wifi_connect(void) {
 		LOG(("ERROR : es-wifi module NOT connected\n"));
 		return -1;
 	}
+}
 	return 0;
+
+
 }
 
 int wifi_server(void) {
@@ -406,23 +435,23 @@ int wifi_server(void) {
 		LOG(("ERROR: Cannot start server.\n"));
 	}
 
-	LOG(
-			("Server is running and waiting for an HTTP  Client connection to %d.%d.%d.%d\n",IP_Addr[0],IP_Addr[1],IP_Addr[2],IP_Addr[3]));
+	//LOG(
+		//	("Server is running and waiting for an HTTP  Client connection to %d.%d.%d.%d\n",IP_Addr[0],IP_Addr[1],IP_Addr[2],IP_Addr[3]));
 
 	do {
 		uint8_t RemoteIP[4];
 		uint16_t RemotePort;
 
-		LOG(
-				("Waiting connection to http://%d.%d.%d.%d\n",IP_Addr[0],IP_Addr[1],IP_Addr[2],IP_Addr[3]));
+		//LOG(
+			//	("Waiting connection to http://%d.%d.%d.%d\n",IP_Addr[0],IP_Addr[1],IP_Addr[2],IP_Addr[3]));
 		while (WIFI_STATUS_OK
 				!= WIFI_WaitServerConnection(SOCKET, 1000, RemoteIP,
 						&RemotePort)) {
 			LOG(("."));
 		}
 
-		LOG(
-				("\nClient connected %d.%d.%d.%d:%d\n",RemoteIP[0],RemoteIP[1],RemoteIP[2],RemoteIP[3],RemotePort));
+		//LOG(
+				//("\nClient connected %d.%d.%d.%d:%d\n",RemoteIP[0],RemoteIP[1],RemoteIP[2],RemoteIP[3],RemotePort));
 
 		StopServer = WebServerProcess();
 
