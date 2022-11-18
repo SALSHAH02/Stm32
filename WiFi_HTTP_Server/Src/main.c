@@ -18,6 +18,8 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include<string.h>
+#include<stdio.h>
+#include<stdbool.h>
 
 #ifdef __ICCARM__
 #include <LowLevelIOInterface.h>
@@ -55,6 +57,23 @@ typedef struct {
 	 (wifi_config_t) is present in Flash. */
 	wifi_config_t wifi_config;
 } user_config_t;
+
+typedef enum
+{
+	one_press=0,
+	double_press,
+	hold
+}button_type;
+
+typedef struct
+{
+	bool      timer_enable;
+	bool      button_flag1;
+	uint8_t   status :3;
+	uint32_t  buttonTimer;
+	uint32_t  debounce_time;
+
+}check;
 
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
@@ -113,6 +132,28 @@ static uint8_t Button_WaitForPush(uint32_t delay);
  * @param  None
  * @retval None
  */
+uint8_t com_up2[]	= "\033[10A";
+uint8_t button_hold(uint32_t delay);
+bool time_diff(uint32_t init_time,uint32_t delay_ms);
+unsigned char buff[300];
+volatile uint8_t buff_1[300];
+uint8_t com_up[]	= "\033[10A";
+uint8_t com_up1[]	= "\033[1A";
+uint8_t com_dn[]	= "\033[B";
+uint8_t msg1[] 		= "\033\143";
+int8_t counter=0;
+int8_t counter1=0;
+WIFI_APs_t A;
+int rk=0;
+#define f_test 00
+int max = 0;
+unsigned char ssid_num[2];
+
+
+
+check button;
+
+
 int main(void) {
 	/* Reset of all peripherals, Initializes the Flash interface and the Systick. */
 	HAL_Init();
@@ -143,7 +184,7 @@ int main(void) {
 	BSP_COM_Init(COM1, &hDiscoUart);
 	BSP_TSENSOR_Init();
 
-	printf("\n****** List of the available WIFI networks******\n\n");
+	//printf("\n****** List of the available WIFI networks******\n\n");
 
 #endif /* TERMINAL_USE */
 
@@ -178,13 +219,9 @@ static int wifi_start(void) {
 
 int wifi_connect(void) {
 	wifi_start();
-	WIFI_APs_t A;
-	int rk=0;
 
-	int max = 0;
-	unsigned char ssid_num[2];
 	max = WIFI_ListAccessPoints(&A, 20);
-	LOG(("\n"));
+	//LOG(("\n"));
 	for (int k = 0; k < A.count; k++)
 	{
 //	LOG(("%d SSID's : %s\t", k, A.ap[k].SSID));
@@ -210,139 +247,193 @@ int wifi_connect(void) {
 	      }
 
 	      t=A.ap[i].RSSI;
+
 	      A.ap[i].RSSI=A.ap[sm].RSSI;
 	      A.ap[sm].RSSI=t;
 
 	      strcpy(t1,A.ap[i].SSID);
 	      strcpy(A.ap[i].SSID,A.ap[sm].SSID);
 	      strcpy(A.ap[sm].SSID,t1);
-	  }
+
+	}
 	uint8_t tmp[100];
 //	LOG(("\n*********AFter sorting************\n"));
 //volatile uint16_t  count=0;
 	for (int i =0; i < A.count; i++)
 		{
-		  LOG(("%d SSID's : %s\t", i, A.ap[i].SSID));
-		  LOG(("->%d RSSI VALUE : %d\n", i, A.ap[i].RSSI));
+		  LOG((" %d.%s", i, A.ap[i].SSID));
+		  LOG(("(%d)\n", A.ap[i].RSSI));
 		}
-
+	HAL_UART_Transmit(&hDiscoUart,com_up2,strlen(com_up2),10);
 
 
 	memset(&user_config, 0, sizeof(user_config));
 	memcpy(&user_config, lUserConfigPtr, sizeof(user_config));
-	if (user_config.wifi_config_magic == USER_CONF_MAGIC) {
-		/* WiFi configuration is already in Flash. Ask if we want to change it */
-		printf("Already configured SSID: %s security: %d\n",
-				user_config.wifi_config.ssid, user_config.wifi_config.security);
-		printf(
-				"Press board User button (blue) within 5 seconds if you want to change the configuration.\n");
-		Button_Reset();
-		if (Button_WaitForPush(5000)) {
-			/* we want to change the configuration already stored in Flash memory */
-			memset(&user_config, 0, sizeof(user_config));
-		}
-	}
+//	if (user_config.wifi_config_magic == USER_CONF_MAGIC) {
+//		/* WiFi configuration is already in Flash. Ask if we want to change it */
+//		printf("Already configured SSID: %s security: %d\n",
+//				user_config.wifi_config.ssid, user_config.wifi_config.security);
+//		printf(
+//				"Press board User button (blue) within 5 seconds if you want to change the configuration.\n");
+//		Button_Reset();
+//		if (Button_WaitForPush(5000)) {
+//			/* we want to change the configuration already stored in Flash memory */
+//			memset(&user_config, 0, sizeof(user_config));
+//		}
+//	}
 while(1){
-	int num=10;
-	if (num==10)
+//	int num=10;
+//	if (num==10)
+	//LOG(("SELECT THE SSID \n"));
+
+	while(1)
 	{
 
-		LOG(("SELECT THE SSID \n"));
-		gets(ssid_num);
 
-		LOG(("SSID====%s",ssid_num));
-		switch (ssid_num[0])
-		{
 
-		case 48:
-			LOG(("selected_WIFI=%s\n",A.ap[0].SSID));
-			sprintf(user_config.wifi_config.ssid, "%s", A.ap[0].SSID);
-			LOG(("\nYou have entered %s as SSID.\n", user_config.wifi_config.ssid));
-			strcpy(A.ap[0].SSID,"****");
-			break;
+		if(button.button_flag1)
+					  {
+						  button.button_flag1=RESET;
 
-		case 49:
-			LOG(("selected_WIFI=%s\n",A.ap[1].SSID));
-			sprintf(user_config.wifi_config.ssid, "%s", A.ap[1].SSID);
-			LOG(("\nYou have entered %s as SSID.\n", user_config.wifi_config.ssid));
-			strcpy(A.ap[1].SSID,"****");
-			break;
+						  if(button.timer_enable!=SET)
+						  {
+							  button.timer_enable=SET;
+							  button.buttonTimer=HAL_GetTick();
+							  button.status=one_press;
+						  }
+						  else
+						  {
+							  button.status=double_press;
+						  }
+					  }
+					  if(time_diff(button.buttonTimer,200) && button.timer_enable )
+					  {
+						  if((button.status==one_press) && (button.status!=double_press))
+						  {
 
-		case 50:
-			LOG(("selected_WIFI=%s\n",A.ap[2].SSID));
-			sprintf(user_config.wifi_config.ssid, "%s", A.ap[2].SSID);
-			LOG(("\nYou have entered %s as SSID.\n", user_config.wifi_config.ssid));
-			strcpy(A.ap[2].SSID,"****");
-			break;
+							  HAL_UART_Transmit(&hDiscoUart, com_dn, strlen(com_dn), 50);
+							  button.timer_enable=RESET;
+							  counter1++;
+							  if(counter1>9)
+								{
+									counter1 = 0;
+									HAL_UART_Transmit(&hDiscoUart,com_up,strlen(com_up),10);
+								}
+						  }
+				          if( button.status==double_press)
+					/*	  if(time_diff(button.buttonTimer,400) && button.timer_enable )*/
+						  {
+							  counter1 = counter1-1;
+							  HAL_UART_Transmit(&hDiscoUart, com_up1, strlen(com_up1), 50);
+							//  button.timer_enable=RESET;
+						  }
 
-		case 51:
-			LOG(("selected_WIFI=%s\n",A.ap[3].SSID));
-			sprintf(user_config.wifi_config.ssid, "%s", A.ap[3].SSID);
-			LOG(("\nYou have entered %s as SSID.\n", user_config.wifi_config.ssid));
-			strcpy(A.ap[3].SSID,"****");
-			break;
+					    button.timer_enable=RESET;
 
-		case 52:
-			LOG(("selected_WIFI=%s\n",A.ap[4].SSID));
-			sprintf(user_config.wifi_config.ssid, "%s", A.ap[4].SSID);
-			LOG(("\nYou have entered %s as SSID.\n", user_config.wifi_config.ssid));
-			strcpy(A.ap[4].SSID,"****");
-			break;
+					  }
 
-		case 53:
-			LOG(("selected_WIFI=%s\n",A.ap[5].SSID));
-			sprintf(user_config.wifi_config.ssid, "%s", A.ap[5].SSID);
-			LOG(("\nYou have entered %s as SSID.\n", user_config.wifi_config.ssid));
-			strcpy(A.ap[5].SSID,"****");
-			break;
+					  if(!(HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13)))
+						  button_hold(1500);
 
-		case 54:
-			LOG(("selected_WIFI=%s\n",A.ap[6].SSID));
-			sprintf(user_config.wifi_config.ssid, "%s", A.ap[6].SSID);
-			LOG(("\nYou have entered %s as SSID.\n", user_config.wifi_config.ssid));
-			strcpy(A.ap[6].SSID,"****");
-			break;
+	//	gets(ssid_num);
 
-		case 55:
-			LOG(("selected_WIFI=%s\n",A.ap[7].SSID));
-			sprintf(user_config.wifi_config.ssid, "%s", A.ap[7].SSID);
-			LOG(("\nYou have entered %s as SSID.\n", user_config.wifi_config.ssid));
-			strcpy(A.ap[7].SSID,"****");
-			break;
-
-		case 56:
-			LOG(("selected_WIFI=%s\n",A.ap[8].SSID));
-			sprintf(user_config.wifi_config.ssid, "%s", A.ap[8].SSID);
-			LOG(("\nYou have entered %s as SSID.\n", user_config.wifi_config.ssid));
-			strcpy(A.ap[8].SSID,"****");
-			break;
-
-		case 57:
-			LOG(("selected_WIFI=%s\n",A.ap[9].SSID));
-			sprintf(user_config.wifi_config.ssid, "%s", A.ap[9].SSID);
-			LOG(("\nYou have entered %s as SSID.\n", user_config.wifi_config.ssid));
-			strcpy(A.ap[9].SSID,"****");
-			break;
-
-		case 58:
-			LOG(("selected_WIFI=%s\n",A.ap[10].SSID));
-			sprintf(user_config.wifi_config.ssid, "%s", A.ap[10].SSID);
-			LOG(("\nYou have entered %s as SSID.\n", user_config.wifi_config.ssid));
-			strcpy(A.ap[10].SSID,"****");
-			break;
-
-		case 59:
-			LOG(("selected_WIFI=%s\n",A.ap[11].SSID));
-			sprintf(user_config.wifi_config.ssid, "%s", A.ap[11].SSID);
-			LOG(("\nYou have entered %s as SSID.\n", user_config.wifi_config.ssid));
-			strcpy(A.ap[11].SSID,"****");
-			break;
-
-		default:
-			LOG(("\nInvalid Choice\n"));
-			break;
-
-		}
+//		LOG(("SSID====%s",ssid_num));
+//		switch (ssid_num[0])
+//		{
+//		case f_test:
+//		{
+//
+//		}
+//
+//		case 48:
+//			LOG(("selected_WIFI=%s\n",A.ap[0].SSID));
+//			sprintf(user_config.wifi_config.ssid, "%s", A.ap[0].SSID);
+//			LOG(("\nYou have entered %s as SSID.\n", user_config.wifi_config.ssid));
+//			strcpy(A.ap[0].SSID,"****");
+//			break;
+//
+//		case 49:
+//			LOG(("selected_WIFI=%s\n",A.ap[1].SSID));
+//			sprintf(user_config.wifi_config.ssid, "%s", A.ap[1].SSID);
+//			LOG(("\nYou have entered %s as SSID.\n", user_config.wifi_config.ssid));
+//			strcpy(A.ap[1].SSID,"****");
+//			break;
+//
+//		case 50:
+//			LOG(("selected_WIFI=%s\n",A.ap[2].SSID));
+//			sprintf(user_config.wifi_config.ssid, "%s", A.ap[2].SSID);
+//			LOG(("\nYou have entered %s as SSID.\n", user_config.wifi_config.ssid));
+//			strcpy(A.ap[2].SSID,"****");
+//			break;
+//
+//		case 51:
+//			LOG(("selected_WIFI=%s\n",A.ap[3].SSID));
+//			sprintf(user_config.wifi_config.ssid, "%s", A.ap[3].SSID);
+//			LOG(("\nYou have entered %s as SSID.\n", user_config.wifi_config.ssid));
+//			strcpy(A.ap[3].SSID,"****");
+//			break;
+//
+//		case 52:
+//			LOG(("selected_WIFI=%s\n",A.ap[4].SSID));
+//			sprintf(user_config.wifi_config.ssid, "%s", A.ap[4].SSID);
+//			LOG(("\nYou have entered %s as SSID.\n", user_config.wifi_config.ssid));
+//			strcpy(A.ap[4].SSID,"****");
+//			break;
+//
+//		case 53:
+//			LOG(("selected_WIFI=%s\n",A.ap[5].SSID));
+//			sprintf(user_config.wifi_config.ssid, "%s", A.ap[5].SSID);
+//			LOG(("\nYou have entered %s as SSID.\n", user_config.wifi_config.ssid));
+//			strcpy(A.ap[5].SSID,"****");
+//			break;
+//
+//		case 54:
+//			LOG(("selected_WIFI=%s\n",A.ap[6].SSID));
+//			sprintf(user_config.wifi_config.ssid, "%s", A.ap[6].SSID);
+//			LOG(("\nYou have entered %s as SSID.\n", user_config.wifi_config.ssid));
+//			strcpy(A.ap[6].SSID,"****");
+//			break;
+//
+//		case 55:
+//			LOG(("selected_WIFI=%s\n",A.ap[7].SSID));
+//			sprintf(user_config.wifi_config.ssid, "%s", A.ap[7].SSID);
+//			LOG(("\nYou have entered %s as SSID.\n", user_config.wifi_config.ssid));
+//			strcpy(A.ap[7].SSID,"****");
+//			break;
+//
+//		case 56:
+//			LOG(("selected_WIFI=%s\n",A.ap[8].SSID));
+//			sprintf(user_config.wifi_config.ssid, "%s", A.ap[8].SSID);
+//			LOG(("\nYou have entered %s as SSID.\n", user_config.wifi_config.ssid));
+//			strcpy(A.ap[8].SSID,"****");
+//			break;
+//
+//		case 57:
+//			LOG(("selected_WIFI=%s\n",A.ap[9].SSID));
+//			sprintf(user_config.wifi_config.ssid, "%s", A.ap[9].SSID);
+//			LOG(("\nYou have entered %s as SSID.\n", user_config.wifi_config.ssid));
+//			strcpy(A.ap[9].SSID,"****");
+//			break;
+//
+//		case 58:
+//			LOG(("selected_WIFI=%s\n",A.ap[10].SSID));
+//			sprintf(user_config.wifi_config.ssid, "%s", A.ap[10].SSID);
+//			LOG(("\nYou have entered %s as SSID.\n", user_config.wifi_config.ssid));
+//			strcpy(A.ap[10].SSID,"****");
+//			break;
+//
+//		case 59:
+//			LOG(("selected_WIFI=%s\n",A.ap[11].SSID));
+//			sprintf(user_config.wifi_config.ssid, "%s", A.ap[11].SSID);
+//			LOG(("\nYou have entered %s as SSID.\n", user_config.wifi_config.ssid));
+//			strcpy(A.ap[11].SSID,"****");
+//			break;
+//
+//		default:
+//			LOG(("\nInvalid Choice\n"));
+//			break;
+//
+//		}
 
 //
 //         if(ssid_num[0]==48)
@@ -358,65 +449,66 @@ while(1){
 // gets(user_config.wifi_config.ssid);
 // LOG(("\nYou have entered %s as SSID.\n", user_config.wifi_config.ssid));
 
-		char c;
-		do {
-			printf(
-					"\rEnter Security Mode (0 - Open, 1 - WEP, 2 - WPA, 3 - WPA2): ");
-			c = getchar();
-		} while ((c < '0') || (c > '3'));
-		user_config.wifi_config.security = c - '0';
-		LOG(
-				("\nYou have entered %d as the security mode.\n", user_config.wifi_config.security));
+//		char c;
+//		do {
+//			printf(
+//					"\rEnter Security Mode (0 - Open, 1 - WEP, 2 - WPA, 3 - WPA2): ");
+//			c = getchar();
+//		} while ((c < '0') || (c > '3'));
+//		user_config.wifi_config.security = c - '0';
+//		LOG(
+//				("\nYou have entered %d as the security mode.\n", user_config.wifi_config.security));
+//
+//		if (user_config.wifi_config.security != 0) {
+//			printf("\nEnter WiFi password : ");
+//			gets(user_config.wifi_config.password);
+//		}
+//		user_config.wifi_config_magic = USER_CONF_MAGIC;
+//		FLASH_Erase_Size((uint32_t) lUserConfigPtr, sizeof(user_config));
+//		FLASH_Write((uint32_t) lUserConfigPtr, (uint32_t*) &user_config,
+//				sizeof(user_config));
 
-		if (user_config.wifi_config.security != 0) {
-			printf("\nEnter WiFi password : ");
-			gets(user_config.wifi_config.password);
-		}
-		user_config.wifi_config_magic = USER_CONF_MAGIC;
-		FLASH_Erase_Size((uint32_t) lUserConfigPtr, sizeof(user_config));
-		FLASH_Write((uint32_t) lUserConfigPtr, (uint32_t*) &user_config,
-				sizeof(user_config));
 	}
 
-	printf("\nConnecting to %s\n", user_config.wifi_config.ssid);
-	WIFI_Ecn_t security;
-	switch (user_config.wifi_config.security) {
-	case 0:
-		security = WIFI_ECN_OPEN;
-		break;
-	case 1:
-		security = WIFI_ECN_WEP;
-		break;
-	case 2:
-		security = WIFI_ECN_WPA_PSK;
-		break;
-	case 3:
-	default:
-		security = WIFI_ECN_WPA2_PSK;
-		break;
-	}
-	if (WIFI_Connect(user_config.wifi_config.ssid,
-			user_config.wifi_config.password, security) == WIFI_STATUS_OK) {
-		if (WIFI_GetIP_Address(IP_Addr) == WIFI_STATUS_OK) {
-			LOG(
-					("eS-WiFi module connected:\ngot IP Address : %d.%d.%d.%d\n", IP_Addr[0], IP_Addr[1], IP_Addr[2], IP_Addr[3]));
-
-		for (int i =0; i < A.count; i++)
-					{
-					  LOG(("%d SSID's : %s\t", i, A.ap[i].SSID));
-					  LOG(("->%d RSSI VALUE : %d\n", i, A.ap[i].RSSI));
-					}
-
-
-		}
-		else {
-			LOG((" ERROR : es-wifi module CANNOT get IP address\n"));
-			return -1;
-		}
-	} else {
-		LOG(("ERROR : es-wifi module NOT connected\n"));
-		return -1;
-	}
+//	printf("\nConnecting to %s\n", user_config.wifi_config.ssid);
+//	WIFI_Ecn_t security;
+//	switch (user_config.wifi_config.security) {
+//	case 0:
+//		security = WIFI_ECN_OPEN;
+//		break;
+//	case 1:
+//		security = WIFI_ECN_WEP;
+//		break;
+//	case 2:
+//		security = WIFI_ECN_WPA_PSK;
+//		break;
+//	case 3:
+//	default:
+//		security = WIFI_ECN_WPA2_PSK;
+//		break;
+//	}
+//	if (WIFI_Connect(user_config.wifi_config.ssid,
+//			user_config.wifi_config.password, security) == WIFI_STATUS_OK) {
+//		if (WIFI_GetIP_Address(IP_Addr) == WIFI_STATUS_OK) {
+//			LOG(
+//					("eS-WiFi module connected:\ngot IP Address : %d.%d.%d.%d\n", IP_Addr[0], IP_Addr[1], IP_Addr[2], IP_Addr[3]));
+//
+//		for (int i =0; i < A.count; i++)
+//					{
+//					  LOG(("%d SSID's : %s\t", i, A.ap[i].SSID));
+//					  LOG(("%d RSSI VALUE : %d\n", i, A.ap[i].RSSI));
+//					}
+//
+//
+//		}
+//		else {
+//			LOG((" ERROR : es-wifi module CANNOT get IP address\n"));
+//			return -1;
+//		}
+//	} else {
+//		LOG(("ERROR : es-wifi module NOT connected\n"));
+//		return -1;
+//	}
 }
 	return 0;
 
@@ -738,19 +830,243 @@ void assert_failed(uint8_t* file, uint32_t line)
  * @retval None
  */
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
-	switch (GPIO_Pin) {
-	case (USER_BUTTON_PIN): {
-		Button_ISR();
-		break;
+	if(GPIO_Pin==GPIO_PIN_1)
+	{
+	SPI_WIFI_ISR();
 	}
-	case (GPIO_PIN_1): {
-		SPI_WIFI_ISR();
-		break;
+
+	if(GPIO_Pin == GPIO_PIN_13 && (HAL_GetTick()-button.debounce_time >15 ) )
+	{
+		//LOG(("Hello\n"));
+			button.button_flag1=SET;
+			button.debounce_time=HAL_GetTick();
+		   /* snprintf(buff_1,700,"				counter : %d",counter1);
+			HAL_UART_Transmit(&hDiscoUart,buff_1,sizeof(buff_1),10);*/
+
 	}
-	default: {
-		break;
+	else
+	{
+		__NOP();
 	}
-	}
+
+}
+
+uint8_t button_hold(uint32_t delay)
+{
+  char buff1[100];
+  uint32_t time_out;
+  time_out= HAL_GetTick();
+  while(!(HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13)))
+  {
+	  if((HAL_GetTick()-time_out)>delay)
+	  {
+
+		  /*HAL_UART_Transmit(&hDiscoUart, "SSID_SELECTED\n", 15, 500);
+		  count=0;*/
+
+
+		          //  sprintf(buff1,"SSID_SELECTED[%d]",counter1);
+		  			HAL_UART_Transmit(&hDiscoUart,buff1,strlen(buff1), 500);
+		  			HAL_Delay(1000);
+		  			HAL_UART_Transmit(&hDiscoUart,msg1,strlen(msg1), 500);
+		  			HAL_Delay(100);
+		  			//HAL_UART_Transmit(&hDiscoUart, "WIFI_PROJECT\n", 15, 500);
+
+		  			HAL_UART_Transmit(&hDiscoUart,buff,strlen(buff), 500);
+		  			HAL_UART_Transmit(&hDiscoUart,com_up,strlen(com_up),100);
+		  			switch (counter1)
+		  			{
+
+		  					case 0:
+		  						//LOG(("selected_WIFI=%s\n",A.ap[0].SSID));
+		  						sprintf(user_config.wifi_config.ssid, "%s", A.ap[0].SSID);
+		  						LOG(("\nYou have entered %s as SSID.\n", user_config.wifi_config.ssid));
+		  						//strcpy(A.ap[0].SSID,"****");
+		  						break;
+
+		  					case 1:
+		  						//LOG(("selected_WIFI=%s\n",A.ap[1].SSID));
+		  						sprintf(user_config.wifi_config.ssid, "%s", A.ap[1].SSID);
+		  						LOG(("\nYou have entered %s as SSID.\n", user_config.wifi_config.ssid));
+		  						//strcpy(A.ap[1].SSID,"****");
+		  						break;
+
+		  					case 2:
+		  						//LOG(("selected_WIFI=%s\n",A.ap[2].SSID));
+		  						sprintf(user_config.wifi_config.ssid, "%s", A.ap[2].SSID);
+		  						LOG(("\nYou have entered %s as SSID.\n", user_config.wifi_config.ssid));
+		  						//strcpy(A.ap[2].SSID,"****");
+		  						break;
+
+		  					case 3:
+		  						//LOG(("selected_WIFI=%s\n",A.ap[3].SSID));
+		  						sprintf(user_config.wifi_config.ssid, "%s", A.ap[3].SSID);
+		  						LOG(("\nYou have entered %s as SSID.\n", user_config.wifi_config.ssid));
+		  						//strcpy(A.ap[3].SSID,"****");
+		  						break;
+
+		  					case 4:
+		  						//LOG(("selected_WIFI=%s\n",A.ap[4].SSID));
+		  						sprintf(user_config.wifi_config.ssid, "%s", A.ap[4].SSID);
+		  						LOG(("\nYou have entered %s as SSID.\n", user_config.wifi_config.ssid));
+		  						//strcpy(A.ap[4].SSID,"****");
+		  						break;
+
+		  					case 5:
+		  					//	LOG(("selected_WIFI=%s\n",A.ap[5].SSID));
+		  						sprintf(user_config.wifi_config.ssid, "%s", A.ap[5].SSID);
+		  						LOG(("\nYou have entered %s as SSID.\n", user_config.wifi_config.ssid));
+		  						//strcpy(A.ap[5].SSID,"****");
+		  						break;
+
+		  					case 6:
+		  					//	LOG(("selected_WIFI=%s\n",A.ap[6].SSID));
+		  						sprintf(user_config.wifi_config.ssid, "%s", A.ap[6].SSID);
+		  						LOG(("\nYou have entered %s as SSID.\n", user_config.wifi_config.ssid));
+		  					//	strcpy(A.ap[6].SSID,"****");
+		  						break;
+
+		  					case 7:
+		  						//LOG(("selected_WIFI=%s\n",A.ap[7].SSID));
+		  						sprintf(user_config.wifi_config.ssid, "%s", A.ap[7].SSID);
+		  						LOG(("\nYou have entered %s as SSID.\n", user_config.wifi_config.ssid));
+		  						//strcpy(A.ap[7].SSID,"****");
+		  						break;
+
+		  					case 8:
+		  					//	LOG(("selected_WIFI=%s\n",A.ap[8].SSID));
+		  						sprintf(user_config.wifi_config.ssid, "%s", A.ap[8].SSID);
+		  						LOG(("\nYou have entered %s as SSID.\n", user_config.wifi_config.ssid));
+		  					//	strcpy(A.ap[8].SSID,"****");
+		  						break;
+
+		  					case 9:
+		  						//LOG(("selected_WIFI=%s\n",A.ap[9].SSID));
+		  						sprintf(user_config.wifi_config.ssid, "%s", A.ap[9].SSID);
+		  						LOG(("\nYou have entered %s as SSID.\n", user_config.wifi_config.ssid));
+		  						//strcpy(A.ap[9].SSID,"****");
+		  						break;
+
+		  					case 10:
+		  					//	LOG(("selected_WIFI=%s\n",A.ap[10].SSID));
+		  						sprintf(user_config.wifi_config.ssid, "%s", A.ap[10].SSID);
+		  						LOG(("\nYou have entered %s as SSID.\n", user_config.wifi_config.ssid));
+		  					//	strcpy(A.ap[10].SSID,"****");
+		  						break;
+
+		  					case 11:
+		  					//	LOG(("selected_WIFI=%s\n",A.ap[11].SSID));
+		  						sprintf(user_config.wifi_config.ssid, "%s", A.ap[11].SSID);
+		  						LOG(("\nYou have entered %s as SSID.\n", user_config.wifi_config.ssid));
+		  						//strcpy(A.ap[11].SSID,"**");
+		  						break;
+
+		  					default:
+		  						LOG(("\nInvalid Choice\n"));
+		  						break;
+
+		  					}
+		  		//	if (user_config.wifi_config_magic != USER_CONF_MAGIC)
+		  			{
+		  					char c;
+		  					do {
+		  						printf(
+		  								"\rEnter Security Mode (0 - Open, 1 - WEP, 2 - WPA, 3 - WPA2): ");
+		  						c = getchar();
+		  					} while ((c < '0') || (c > '3'));
+		  					user_config.wifi_config.security = c - '0';
+		  					LOG(
+		  							("\nYou have entered %d as the security mode.\n", user_config.wifi_config.security));
+
+		  					if (user_config.wifi_config.security != 0) {
+		  						printf("\nEnter WiFi password : ");
+		  						gets(user_config.wifi_config.password);
+		  					}
+		  				//	user_config.wifi_config_magic = USER_CONF_MAGIC;
+//		  					FLASH_Erase_Size((uint32_t) lUserConfigPtr, sizeof(user_config));
+//		  					FLASH_Write((uint32_t) lUserConfigPtr, (uint32_t*) &user_config,
+//		  							sizeof(user_config));
+
+		  				}
+		  			printf("\nConnecting to %s\n", user_config.wifi_config.ssid);
+		  				WIFI_Ecn_t security;
+		  				switch (user_config.wifi_config.security) {
+		  				case 0:
+		  					security = WIFI_ECN_OPEN;
+		  					break;
+		  				case 1:
+		  					security = WIFI_ECN_WEP;
+		  					break;
+		  				case 2:
+		  					security = WIFI_ECN_WPA_PSK;
+		  					break;
+		  				case 3:
+		  				default:
+		  					security = WIFI_ECN_WPA2_PSK;
+		  					break;
+		  				}
+		  				if (WIFI_Connect(user_config.wifi_config.ssid,user_config.wifi_config.password, security) == WIFI_STATUS_OK) {
+		  						if (WIFI_GetIP_Address(IP_Addr) == WIFI_STATUS_OK) {
+		  							//LOG(
+		  									//("eS-WiFi module connected:\ngot IP Address : %d.%d.%d.%d\n", IP_Addr[0], IP_Addr[1], IP_Addr[2], IP_Addr[3]));
+		  							HAL_Delay(1700);
+		  						    HAL_UART_Transmit(&hDiscoUart,msg1,strlen(msg1), 500);
+
+		  							for (int i =0; i < A.count; i++){
+		  											if((i)!=counter1)
+
+		  												{
+		  												  LOG((" %d.%s", i, A.ap[i].SSID));
+		  												  LOG((" (%d)\n",  A.ap[i].RSSI));
+		  												}
+
+		  										else
+		  										{
+		  											LOG((" %d.* %s", i, A.ap[i].SSID));
+		  											LOG((" (%d)\n",  A.ap[i].RSSI));
+		  										}
+
+		  									}
+		  							HAL_UART_Transmit(&hDiscoUart,com_up,strlen(com_up),500);
+		  							 counter1=0;
+		  							//HAL_UART_Transmit(&hDiscoUart,com_up,strlen(com_up),1000);
+		  						}
+		  						else {
+		  							LOG((" ERROR : es-wifi module CANNOT get IP address\n"));
+		  							return -1;
+		  						}
+		  					} else {
+		  						LOG(("ERROR : es-wifi module NOT connected\n"));
+		  						HAL_UART_Transmit(&hDiscoUart,msg1,sizeof(msg1),1000);
+		  						HAL_Delay(1000);
+		  						//memset(temp_ssid_num,0,sizeof(temp_ssid_num));
+		  						for (int i =0; i < A.count; i++){
+
+		  						LOG((" %d.%s", i, A.ap[i].SSID));
+		  						LOG((" (%d)\n",  A.ap[i].RSSI));
+
+		  						}
+		  						HAL_UART_Transmit(&hDiscoUart,com_up,strlen(com_up),1000);
+		  						return -1;
+		  					}
+
+
+		            button.timer_enable=0;
+		            break;
+	  }
+
+
+  }
+
+  return 0;
+}
+
+
+bool time_diff(uint32_t init_time,uint32_t delay_ms)
+{
+	bool ret=0;
+	ret= (HAL_GetTick()-(init_time) >delay_ms ? 1:0);
+	return ret;
 }
 
 /**
